@@ -17,9 +17,20 @@ import sys
 from pathlib import Path
 
 
-def ffmpeg_disponible() -> bool:
-    """Retourne True si ffmpeg est trouvable dans le PATH."""
-    return shutil.which("ffmpeg") is not None
+def trouver_ffmpeg() -> str | None:
+    """Retourne le chemin de ffmpeg, ou None s'il est introuvable.
+
+    Cherche d'abord dans le PATH, puis dans le paquet Python
+    `imageio-ffmpeg` qui embarque un binaire ffmpeg autonome.
+    """
+    exe = shutil.which("ffmpeg")
+    if exe:
+        return exe
+    try:
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:
+        return None
 
 
 def lister_mkv(source: Path, recursif: bool) -> list[Path]:
@@ -32,7 +43,7 @@ def lister_mkv(source: Path, recursif: bool) -> list[Path]:
 
 
 def convertir(fichier: Path, dossier_sortie: Path | None, bitrate: str,
-              ecraser: bool) -> bool:
+              ecraser: bool, ffmpeg: str = "ffmpeg") -> bool:
     """Convertit un fichier .mkv en .mp3. Retourne True en cas de succès."""
     destination_dir = dossier_sortie if dossier_sortie else fichier.parent
     destination_dir.mkdir(parents=True, exist_ok=True)
@@ -43,7 +54,7 @@ def convertir(fichier: Path, dossier_sortie: Path | None, bitrate: str,
         return True
 
     commande = [
-        "ffmpeg",
+        ffmpeg,
         "-y" if ecraser else "-n",
         "-i", str(fichier),
         "-vn",                 # pas de vidéo
@@ -77,11 +88,13 @@ def main(argv: list[str] | None = None) -> int:
                          help="Écraser les .mp3 déjà présents")
     args = parseur.parse_args(argv)
 
-    if not ffmpeg_disponible():
+    ffmpeg = trouver_ffmpeg()
+    if not ffmpeg:
         print("Erreur : ffmpeg est introuvable. Installez-le puis réessayez.\n"
-              "  Debian/Ubuntu : sudo apt install ffmpeg\n"
-              "  macOS (brew)  : brew install ffmpeg\n"
-              "  Windows       : https://ffmpeg.org/download.html",
+              "  Le plus simple : pip install imageio-ffmpeg\n"
+              "  Debian/Ubuntu  : sudo apt install ffmpeg\n"
+              "  macOS (brew)   : brew install ffmpeg\n"
+              "  Windows        : https://ffmpeg.org/download.html",
               file=sys.stderr)
         return 1
 
@@ -96,7 +109,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     print(f"{len(fichiers)} fichier(s) à convertir :")
-    succes = sum(convertir(f, args.output, args.bitrate, args.overwrite)
+    succes = sum(convertir(f, args.output, args.bitrate, args.overwrite, ffmpeg)
                  for f in fichiers)
     echecs = len(fichiers) - succes
 
