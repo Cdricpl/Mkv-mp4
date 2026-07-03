@@ -45,13 +45,20 @@ def lister_mkv(source: Path, recursif: bool) -> list[Path]:
 
 def commande_ffmpeg(ffmpeg: str, fichier: Path, sortie: Path,
                     crf: int | None) -> list[str]:
-    """Construit la commande : copie directe si crf est None, sinon réencodage."""
+    """Construit la commande ffmpeg.
+
+    crf None : vidéo copiée telle quelle (rapide, sans perte) ; sinon
+    réencodage x264 à la qualité demandée. Dans les deux cas l'audio est
+    converti en AAC (les pistes DTS/FLAC des MKV ne sont pas lisibles dans
+    un MP4 sur la plupart des lecteurs) et les sous-titres sont ignorés
+    (-sn : les sous-titres image des BluRay ne rentrent pas dans un MP4).
+    """
     if crf is None:
-        codecs = ["-c", "copy"]
+        video = ["-c:v", "copy"]
     else:
-        codecs = ["-c:v", "libx264", "-crf", str(crf), "-preset", "veryfast",
-                  "-c:a", "aac", "-b:a", "192k"]
-    return [ffmpeg, "-y", "-i", str(fichier), *codecs,
+        video = ["-c:v", "libx264", "-crf", str(crf), "-preset", "veryfast"]
+    return [ffmpeg, "-y", "-i", str(fichier), *video,
+            "-c:a", "aac", "-b:a", "192k", "-sn",
             "-movflags", "+faststart", str(sortie)]
 
 

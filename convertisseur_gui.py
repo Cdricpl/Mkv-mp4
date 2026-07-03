@@ -11,9 +11,11 @@ Lancement :
 (sous Windows : double-cliquer sur Convertir-MKV-MP4.bat)
 """
 
+import importlib
 import os
 import re
 import subprocess
+import sys
 import threading
 from pathlib import Path
 
@@ -175,12 +177,14 @@ class Application(tk.Tk):
             return
         ffmpeg = trouver_ffmpeg()
         if not ffmpeg:
-            messagebox.showerror(
-                "ffmpeg introuvable",
-                "Le moteur de conversion (ffmpeg) est introuvable.\n\n"
-                "Ouvrez un terminal et tapez :\n"
-                "    pip install imageio-ffmpeg\n"
-                "puis relancez ce programme.")
+            if messagebox.askyesno(
+                    "Moteur de conversion manquant",
+                    "Le moteur de conversion (ffmpeg) n'est pas encore "
+                    "installé.\n\n"
+                    "Voulez-vous l'installer automatiquement maintenant ?\n"
+                    "(téléchargement unique d'environ 30 Mo, puis la "
+                    "conversion démarrera toute seule)"):
+                self._installer_ffmpeg()
             return
 
         self.conversion_en_cours = True
@@ -189,6 +193,41 @@ class Application(tk.Tk):
         self.bouton_annuler.config(state="normal")
         threading.Thread(target=self._convertir_tout, args=(ffmpeg,),
                          daemon=True).start()
+
+    def _installer_ffmpeg(self) -> None:
+        """Installe imageio-ffmpeg via pip, puis relance la conversion."""
+        self.bouton_convertir.config(state="disabled")
+        self.statut.config(text="Installation du moteur de conversion…")
+        self.ecrire_journal("Téléchargement du moteur (imageio-ffmpeg)…")
+
+        def _travail() -> None:
+            resultat = subprocess.run(
+                [sys.executable, "-m", "pip", "install", "imageio-ffmpeg"],
+                capture_output=True, text=True,
+                creationflags=FLAGS_SANS_FENETRE)
+            importlib.invalidate_caches()  # rend le paquet importable de suite
+            ok = resultat.returncode == 0 and trouver_ffmpeg() is not None
+            self.after(0, self._fin_installation, ok,
+                       resultat.stderr or resultat.stdout)
+
+        threading.Thread(target=_travail, daemon=True).start()
+
+    def _fin_installation(self, ok: bool, erreurs: str) -> None:
+        self.bouton_convertir.config(state="normal")
+        if ok:
+            self.ecrire_journal("✓ Moteur de conversion installé.")
+            self.statut.config(text="Moteur installé, conversion…")
+            self.lancer_conversion()
+        else:
+            self.statut.config(text="Installation impossible.")
+            self.ecrire_journal(f"✗ Installation impossible :\n"
+                                f"{erreurs.strip()}")
+            messagebox.showerror(
+                "Installation impossible",
+                "L'installation automatique a échoué (voir le journal).\n\n"
+                "Ouvrez un terminal (cmd) et tapez :\n"
+                "    pip install imageio-ffmpeg\n"
+                "puis relancez ce programme.")
 
     def _convertir_tout(self, ffmpeg: str) -> None:
         total = len(self.fichiers)

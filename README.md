@@ -4,13 +4,16 @@ Programme complet pour convertir des fichiers vidéo `.mkv` en `.mp4`, avec
 **interface graphique** (sélection à la souris, barre de progression,
 annulation) ou en ligne de commande.
 
-- **Rapide et sans perte** : quand le contenu du MKV est déjà compatible MP4
-  (cas le plus fréquent), les pistes sont copiées telles quelles — la
-  conversion prend quelques secondes, sans aucune perte de qualité.
-- **Réencodage automatique** : si un codec n'est pas accepté dans un MP4,
-  le programme réencode tout seul.
+- **Rapide** : quand la vidéo du MKV est déjà compatible MP4 (cas le plus
+  fréquent : H.264/x264, H.265/x265), elle est copiée telle quelle, sans
+  aucune perte de qualité.
+- **Lisible partout** : l'audio est converti en AAC (les pistes DTS ou FLAC
+  des MKV ne passent pas sur la plupart des TV et lecteurs en MP4).
+- **Réencodage automatique** : si la vidéo n'est pas acceptée dans un MP4,
+  le programme la réencode tout seul.
 - Le moteur de conversion (ffmpeg) est **installé automatiquement** au
-  premier lancement — il suffit d'avoir Python 3.
+  premier lancement (le programme le propose lui-même) — il suffit d'avoir
+  Python 3.
 
 ## Démarrage rapide
 
