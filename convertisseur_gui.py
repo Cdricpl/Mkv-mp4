@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Convertisseur MKV -> MP3 — interface graphique.
+"""Convertisseur MKV -> MP4 — interface graphique.
 
-Fenêtre simple pour convertir des fichiers .mkv en .mp3 :
+Fenêtre simple pour convertir des fichiers .mkv en .mp4 :
 sélection à la souris, barre de progression, journal, annulation.
+Copie directe des pistes quand c'est possible (rapide, sans perte),
+réencodage automatique sinon.
 
 Lancement :
     python3 convertisseur_gui.py
-(sous Windows : double-cliquer sur Convertir-MKV-MP3.bat)
+(sous Windows : double-cliquer sur Convertir-MKV-MP4.bat)
 """
 
 import os
@@ -24,9 +26,9 @@ except ModuleNotFoundError:
         "  Debian/Ubuntu : sudo apt install python3-tk\n"
         "  Fedora        : sudo dnf install python3-tkinter\n"
         "  Windows/macOS : réinstallez Python depuis python.org\n"
-        "Sinon, utilisez la version en ligne de commande : mkv_to_mp3.py")
+        "Sinon, utilisez la version en ligne de commande : mkv_to_mp4.py")
 
-from mkv_to_mp3 import lister_mkv, trouver_ffmpeg
+from mkv_to_mp4 import commande_ffmpeg, lister_mkv, trouver_ffmpeg
 
 # Sous Windows, empêche l'ouverture d'une console noire à chaque conversion.
 FLAGS_SANS_FENETRE = (subprocess.CREATE_NO_WINDOW
@@ -34,6 +36,13 @@ FLAGS_SANS_FENETRE = (subprocess.CREATE_NO_WINDOW
 
 RE_DUREE = re.compile(r"Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)")
 RE_TEMPS = re.compile(r"out_time=(\d+):(\d+):(\d+(?:\.\d+)?)")
+
+QUALITES = {
+    "Auto (copie rapide)": None,
+    "Haute (réencodage)": 18,
+    "Moyenne (réencodage)": 23,
+    "Basse (réencodage)": 28,
+}
 
 
 def en_secondes(h: str, m: str, s: str) -> float:
@@ -52,7 +61,7 @@ def duree_fichier(ffmpeg: str, fichier: Path) -> float | None:
 class Application(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
-        self.title("Convertisseur MKV → MP3")
+        self.title("Convertisseur MKV → MP4")
         self.minsize(560, 460)
 
         self.fichiers: list[Path] = []
@@ -87,11 +96,10 @@ class Application(tk.Tk):
         options = ttk.Frame(cadre)
         options.pack(fill="x")
         ttk.Label(options, text="Qualité :").pack(side="left")
-        self.bitrate = tk.StringVar(value="192k")
-        ttk.Combobox(options, textvariable=self.bitrate, width=6,
+        self.qualite = tk.StringVar(value="Auto (copie rapide)")
+        ttk.Combobox(options, textvariable=self.qualite, width=20,
                      state="readonly",
-                     values=("128k", "192k", "256k", "320k")).pack(side="left",
-                                                                   padx=(4, 16))
+                     values=list(QUALITES)).pack(side="left", padx=(4, 16))
         ttk.Button(options, text="Dossier de sortie…",
                    command=self.choisir_sortie).pack(side="left")
         self.label_sortie = ttk.Label(options,
@@ -193,37 +201,51 @@ class Application(tk.Tk):
                 reussis += 1
         self.after(0, self._fin_conversion, reussis, total)
 
-    def _convertir_un(self, ffmpeg: str, fichier: Path,
-                      index: int, total: int) -> bool:
-        dossier = self.dossier_sortie or fichier.parent
-        dossier.mkdir(parents=True, exist_ok=True)
-        sortie = dossier / (fichier.stem + ".mp3")
-
-        duree = duree_fichier(ffmpeg, fichier)
-        commande = [ffmpeg, "-y", "-i", str(fichier), "-vn",
-                    "-acodec", "libmp3lame", "-b:a", self.bitrate.get(),
-                    "-progress", "pipe:1", "-nostats", "-loglevel", "error",
-                    str(sortie)]
+    def _executer(self, commande: list[str], duree: float | None,
+                  index: int, total: int) -> tuple[int, str]:
+        """Lance ffmpeg en suivant la progression. Retourne (code, erreurs)."""
+        # -progress écrit l'avancement sur la sortie standard
+        commande = commande[:1] + ["-progress", "pipe:1", "-nostats",
+                                   "-loglevel", "error"] + commande[1:]
         self.processus = subprocess.Popen(
             commande, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             text=True, creationflags=FLAGS_SANS_FENETRE)
-
         for ligne in self.processus.stdout:
             trouve = RE_TEMPS.search(ligne)
             if trouve and duree:
                 fraction = min(en_secondes(*trouve.groups()) / duree, 1.0)
                 self.maj_progression((index + fraction) / total)
-
         erreurs = self.processus.stderr.read()
         code = self.processus.wait()
         self.processus = None
+        return code, erreurs
+
+    def _convertir_un(self, ffmpeg: str, fichier: Path,
+                      index: int, total: int) -> bool:
+        dossier = self.dossier_sortie or fichier.parent
+        dossier.mkdir(parents=True, exist_ok=True)
+        sortie = dossier / (fichier.stem + ".mp4")
+
+        duree = duree_fichier(ffmpeg, fichier)
+        crf = QUALITES[self.qualite.get()]
+        code, erreurs = self._executer(
+            commande_ffmpeg(ffmpeg, fichier, sortie, crf), duree, index, total)
+
+        # Copie directe impossible (codec incompatible MP4) : on réencode.
+        if code != 0 and crf is None and not self.annulation_demandee:
+            self.ecrire_journal(f"  copie directe impossible pour "
+                                f"{fichier.name}, réencodage…")
+            code, erreurs = self._executer(
+                commande_ffmpeg(ffmpeg, fichier, sortie, 23),
+                duree, index, total)
+
         self.maj_progression((index + 1) / total)
 
         if code == 0:
             self.ecrire_journal(f"✓ {sortie.name}")
             return True
+        sortie.unlink(missing_ok=True)  # fichier incomplet
         if self.annulation_demandee:
-            sortie.unlink(missing_ok=True)  # fichier incomplet
             self.ecrire_journal(f"✗ Annulé : {fichier.name}")
         else:
             self.ecrire_journal(f"✗ Échec : {fichier.name}\n{erreurs.strip()}")

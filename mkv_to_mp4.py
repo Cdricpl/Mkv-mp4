@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Convertisseur MKV -> MP3.
+"""Convertisseur MKV -> MP4.
 
-Extrait la piste audio de fichiers .mkv et l'encode en .mp3 en s'appuyant
-sur ffmpeg. Gère un fichier unique ou un dossier entier (récursif ou non).
+Convertit des fichiers .mkv en .mp4 en s'appuyant sur ffmpeg.
+Essaie d'abord une copie directe des pistes (quasi instantanée, sans perte) ;
+si le contenu n'est pas compatible MP4, réencode automatiquement.
 
 Exemples :
-    python3 mkv_to_mp3.py video.mkv
-    python3 mkv_to_mp3.py dossier/ -o sorties/ --recursive
-    python3 mkv_to_mp3.py video.mkv --bitrate 320k
+    python3 mkv_to_mp4.py video.mkv
+    python3 mkv_to_mp4.py dossier/ -o sorties/ --recursive
+    python3 mkv_to_mp4.py video.mkv --crf 18   # force le réencodage haute qualité
 """
 
 import argparse
@@ -42,31 +43,44 @@ def lister_mkv(source: Path, recursif: bool) -> list[Path]:
                   if p.is_file() and p.suffix.lower() == ".mkv")
 
 
-def convertir(fichier: Path, dossier_sortie: Path | None, bitrate: str,
+def commande_ffmpeg(ffmpeg: str, fichier: Path, sortie: Path,
+                    crf: int | None) -> list[str]:
+    """Construit la commande : copie directe si crf est None, sinon réencodage."""
+    if crf is None:
+        codecs = ["-c", "copy"]
+    else:
+        codecs = ["-c:v", "libx264", "-crf", str(crf), "-preset", "veryfast",
+                  "-c:a", "aac", "-b:a", "192k"]
+    return [ffmpeg, "-y", "-i", str(fichier), *codecs,
+            "-movflags", "+faststart", str(sortie)]
+
+
+def convertir(fichier: Path, dossier_sortie: Path | None, crf: int | None,
               ecraser: bool, ffmpeg: str = "ffmpeg") -> bool:
-    """Convertit un fichier .mkv en .mp3. Retourne True en cas de succès."""
+    """Convertit un fichier .mkv en .mp4. Retourne True en cas de succès."""
     destination_dir = dossier_sortie if dossier_sortie else fichier.parent
     destination_dir.mkdir(parents=True, exist_ok=True)
-    sortie = destination_dir / (fichier.stem + ".mp3")
+    sortie = destination_dir / (fichier.stem + ".mp4")
 
     if sortie.exists() and not ecraser:
         print(f"  ↷ Ignoré (existe déjà) : {sortie.name}  (utilisez --overwrite)")
         return True
 
-    commande = [
-        ffmpeg,
-        "-y" if ecraser else "-n",
-        "-i", str(fichier),
-        "-vn",                 # pas de vidéo
-        "-acodec", "libmp3lame",
-        "-b:a", bitrate,
-        str(sortie),
-    ]
-
     print(f"  → {fichier.name}  =>  {sortie.name}")
-    resultat = subprocess.run(commande, stdout=subprocess.DEVNULL,
-                              stderr=subprocess.PIPE, text=True)
+    resultat = subprocess.run(
+        commande_ffmpeg(ffmpeg, fichier, sortie, crf),
+        stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+
+    # La copie directe échoue si un codec n'est pas accepté dans un MP4 :
+    # on retente alors en réencodant.
+    if resultat.returncode != 0 and crf is None:
+        print("    copie directe impossible, réencodage…")
+        resultat = subprocess.run(
+            commande_ffmpeg(ffmpeg, fichier, sortie, 23),
+            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+
     if resultat.returncode != 0:
+        sortie.unlink(missing_ok=True)
         print(f"  ✗ Échec pour {fichier.name} :", file=sys.stderr)
         print(resultat.stderr.strip(), file=sys.stderr)
         return False
@@ -75,17 +89,19 @@ def convertir(fichier: Path, dossier_sortie: Path | None, bitrate: str,
 
 def main(argv: list[str] | None = None) -> int:
     parseur = argparse.ArgumentParser(
-        description="Convertit des fichiers MKV en MP3 (via ffmpeg).")
+        description="Convertit des fichiers MKV en MP4 (via ffmpeg).")
     parseur.add_argument("source",
                          help="Fichier .mkv ou dossier contenant des .mkv")
     parseur.add_argument("-o", "--output", type=Path, default=None,
                          help="Dossier de sortie (par défaut : à côté du source)")
-    parseur.add_argument("-b", "--bitrate", default="192k",
-                         help="Débit audio du MP3 (défaut : 192k)")
+    parseur.add_argument("--crf", type=int, default=None, metavar="N",
+                         help="Force le réencodage vidéo avec cette qualité "
+                              "(18 = haute, 23 = moyenne, 28 = basse). "
+                              "Par défaut : copie directe sans réencodage.")
     parseur.add_argument("-r", "--recursive", action="store_true",
                          help="Parcourir les sous-dossiers")
     parseur.add_argument("--overwrite", action="store_true",
-                         help="Écraser les .mp3 déjà présents")
+                         help="Écraser les .mp4 déjà présents")
     args = parseur.parse_args(argv)
 
     ffmpeg = trouver_ffmpeg()
@@ -109,7 +125,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     print(f"{len(fichiers)} fichier(s) à convertir :")
-    succes = sum(convertir(f, args.output, args.bitrate, args.overwrite, ffmpeg)
+    succes = sum(convertir(f, args.output, args.crf, args.overwrite, ffmpeg)
                  for f in fichiers)
     echecs = len(fichiers) - succes
 

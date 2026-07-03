@@ -1,11 +1,16 @@
-# Convertisseur MKV → MP3
+# Convertisseur MKV → MP4
 
-Programme complet pour extraire l'audio de fichiers `.mkv` et l'encoder en
-`.mp3`, avec **interface graphique** (sélection à la souris, barre de
-progression, annulation) ou en ligne de commande.
+Programme complet pour convertir des fichiers vidéo `.mkv` en `.mp4`, avec
+**interface graphique** (sélection à la souris, barre de progression,
+annulation) ou en ligne de commande.
 
-Le moteur de conversion (ffmpeg) est **installé automatiquement** au premier
-lancement — il suffit d'avoir Python 3.
+- **Rapide et sans perte** : quand le contenu du MKV est déjà compatible MP4
+  (cas le plus fréquent), les pistes sont copiées telles quelles — la
+  conversion prend quelques secondes, sans aucune perte de qualité.
+- **Réencodage automatique** : si un codec n'est pas accepté dans un MP4,
+  le programme réencode tout seul.
+- Le moteur de conversion (ffmpeg) est **installé automatiquement** au
+  premier lancement — il suffit d'avoir Python 3.
 
 ## Démarrage rapide
 
@@ -14,12 +19,12 @@ lancement — il suffit d'avoir Python 3.
 2. Télécharger ce projet (bouton vert **Code** → **Download ZIP**) et le
    décompresser
 3. Lancer le programme :
-   - **Windows** : double-cliquer sur `Convertir-MKV-MP3.bat`
-   - **Mac / Linux** : `./convertir-mkv-mp3.sh`
+   - **Windows** : double-cliquer sur `Convertir-MKV-MP4.bat`
+   - **Mac / Linux** : `./convertir-mkv-mp4.sh`
 
-Une fenêtre s'ouvre : ajoutez vos fichiers, choisissez la qualité,
-cliquez sur **▶ Convertir**. Les `.mp3` sont créés à côté des vidéos
-(ou dans le dossier de sortie de votre choix).
+Une fenêtre s'ouvre : ajoutez vos fichiers, cliquez sur **▶ Convertir**.
+Les `.mp4` sont créés à côté des vidéos (ou dans le dossier de sortie de
+votre choix).
 
 ## Version ligne de commande
 
@@ -27,22 +32,25 @@ Pour les utilisateurs à l'aise avec le terminal :
 
 ```bash
 # Un seul fichier
-python3 mkv_to_mp3.py video.mkv
+python3 mkv_to_mp4.py video.mkv
 
 # Tous les .mkv d'un dossier, vers un dossier de sortie
-python3 mkv_to_mp3.py mes_videos/ -o mes_mp3/
+python3 mkv_to_mp4.py mes_videos/ -o mes_mp4/
 
-# Sous-dossiers inclus, meilleure qualité
-python3 mkv_to_mp3.py mes_videos/ --recursive --bitrate 320k
+# Sous-dossiers inclus
+python3 mkv_to_mp4.py mes_videos/ --recursive
+
+# Forcer le réencodage en haute qualité
+python3 mkv_to_mp4.py video.mkv --crf 18
 ```
 
-| Option              | Description                                        |
-|---------------------|----------------------------------------------------|
-| `source`            | Fichier `.mkv` ou dossier contenant des `.mkv`     |
-| `-o`, `--output`    | Dossier de sortie (par défaut : à côté du fichier) |
-| `-b`, `--bitrate`   | Débit audio du MP3 (par défaut : `192k`)           |
-| `-r`, `--recursive` | Parcourir les sous-dossiers                        |
-| `--overwrite`       | Écraser les `.mp3` déjà présents                   |
+| Option              | Description                                            |
+|---------------------|--------------------------------------------------------|
+| `source`            | Fichier `.mkv` ou dossier contenant des `.mkv`         |
+| `-o`, `--output`    | Dossier de sortie (par défaut : à côté du fichier)     |
+| `--crf N`           | Force le réencodage (18 = haute qualité, 23 = moyenne, 28 = basse). Par défaut : copie directe sans réencodage |
+| `-r`, `--recursive` | Parcourir les sous-dossiers                            |
+| `--overwrite`       | Écraser les `.mp4` déjà présents                       |
 
 ## À propos de ffmpeg
 
@@ -61,6 +69,6 @@ Si aucun des deux n'est disponible, le programme affiche la commande à taper
 | Fichier                  | Rôle                                      |
 |--------------------------|-------------------------------------------|
 | `convertisseur_gui.py`   | Interface graphique                       |
-| `mkv_to_mp3.py`          | Moteur + version ligne de commande        |
-| `Convertir-MKV-MP3.bat`  | Lanceur Windows (double-clic)             |
-| `convertir-mkv-mp3.sh`   | Lanceur Mac / Linux                       |
+| `mkv_to_mp4.py`          | Moteur + version ligne de commande        |
+| `Convertir-MKV-MP4.bat`  | Lanceur Windows (double-clic)             |
+| `convertir-mkv-mp4.sh`   | Lanceur Mac / Linux                       |
