@@ -44,6 +44,7 @@ QUALITES = {
     "Haute (réencodage)": 18,
     "Moyenne (réencodage)": 23,
     "Basse (réencodage)": 28,
+    "Lecteur DVD portable (DivX .avi)": "divx",
 }
 
 
@@ -99,7 +100,7 @@ class Application(tk.Tk):
         options.pack(fill="x")
         ttk.Label(options, text="Qualité :").pack(side="left")
         self.qualite = tk.StringVar(value="Auto (copie rapide)")
-        ttk.Combobox(options, textvariable=self.qualite, width=20,
+        ttk.Combobox(options, textvariable=self.qualite, width=28,
                      state="readonly",
                      values=list(QUALITES)).pack(side="left", padx=(4, 16))
         ttk.Button(options, text="Dossier de sortie…",
@@ -263,10 +264,11 @@ class Application(tk.Tk):
                       index: int, total: int) -> bool:
         dossier = self.dossier_sortie or fichier.parent
         dossier.mkdir(parents=True, exist_ok=True)
-        sortie = dossier / (fichier.stem + ".mp4")
+        crf = QUALITES[self.qualite.get()]
+        extension = ".avi" if crf == "divx" else ".mp4"
+        sortie = dossier / (fichier.stem + extension)
 
         duree = duree_fichier(ffmpeg, fichier)
-        crf = QUALITES[self.qualite.get()]
         code, erreurs = self._executer(
             commande_ffmpeg(ffmpeg, fichier, sortie, crf), duree, index, total)
 

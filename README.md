@@ -11,6 +11,9 @@ annulation) ou en ligne de commande.
   des MKV ne passent pas sur la plupart des TV et lecteurs en MP4).
 - **Réencodage automatique** : si la vidéo n'est pas acceptée dans un MP4,
   le programme la réencode tout seul.
+- **Mode anciens lecteurs** : la qualité « Lecteur DVD portable (DivX .avi) »
+  produit un fichier Xvid + MP3 lisible par les lecteurs DVD de salon et
+  portables (Medion, etc.) qui ne décodent pas le H.264/H.265.
 - Le moteur de conversion (ffmpeg) est **installé automatiquement** au
   premier lancement (le programme le propose lui-même) — il suffit d'avoir
   Python 3.
@@ -45,6 +48,9 @@ python3 mkv_to_mp4.py mes_videos/ --recursive
 
 # Forcer le réencodage en haute qualité
 python3 mkv_to_mp4.py video.mkv --crf 18
+
+# Pour un ancien lecteur DVD (produit un .avi Xvid + MP3)
+python3 mkv_to_mp4.py video.mkv --divx
 ```
 
 | Option              | Description                                            |
@@ -52,6 +58,7 @@ python3 mkv_to_mp4.py video.mkv --crf 18
 | `source`            | Fichier `.mkv` ou dossier contenant des `.mkv`         |
 | `-o`, `--output`    | Dossier de sortie (par défaut : à côté du fichier)     |
 | `--crf N`           | Force le réencodage (18 = haute qualité, 23 = moyenne, 28 = basse). Par défaut : copie directe sans réencodage |
+| `--divx`            | Produit un `.avi` Xvid + MP3 pour les anciens lecteurs DVD |
 | `-r`, `--recursive` | Parcourir les sous-dossiers                            |
 | `--overwrite`       | Écraser les `.mp4` déjà présents                       |
 

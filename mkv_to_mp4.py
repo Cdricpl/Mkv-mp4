@@ -44,15 +44,24 @@ def lister_mkv(source: Path, recursif: bool) -> list[Path]:
 
 
 def commande_ffmpeg(ffmpeg: str, fichier: Path, sortie: Path,
-                    crf: int | None) -> list[str]:
+                    crf: int | str | None) -> list[str]:
     """Construit la commande ffmpeg.
 
-    crf None : vidéo copiée telle quelle (rapide, sans perte) ; sinon
-    réencodage x264 à la qualité demandée. Dans les deux cas l'audio est
-    converti en AAC (les pistes DTS/FLAC des MKV ne sont pas lisibles dans
-    un MP4 sur la plupart des lecteurs) et les sous-titres sont ignorés
-    (-sn : les sous-titres image des BluRay ne rentrent pas dans un MP4).
+    crf None : vidéo copiée telle quelle (rapide, sans perte) ; un entier :
+    réencodage x264 à la qualité demandée ; "divx" : Xvid + MP3 dans un
+    .avi pour les anciens lecteurs DVD de salon/portables, qui ne décodent
+    pas le H.264/H.265 (résolution plafonnée à 720 px de large, stéréo).
+
+    Dans tous les cas les sous-titres sont ignorés (-sn : les sous-titres
+    image des BluRay ne rentrent pas dans un MP4) et l'audio est réencodé
+    (les pistes DTS/FLAC des MKV ne sont pas lisibles sur la plupart des
+    lecteurs).
     """
+    if crf == "divx":
+        codecs = ["-c:v", "mpeg4", "-vtag", "XVID", "-qscale:v", "5",
+                  "-vf", "scale='min(720,iw)':-2",
+                  "-c:a", "libmp3lame", "-b:a", "192k", "-ac", "2"]
+        return [ffmpeg, "-y", "-i", str(fichier), *codecs, "-sn", str(sortie)]
     if crf is None:
         video = ["-c:v", "copy"]
     else:
@@ -62,12 +71,16 @@ def commande_ffmpeg(ffmpeg: str, fichier: Path, sortie: Path,
             "-movflags", "+faststart", str(sortie)]
 
 
-def convertir(fichier: Path, dossier_sortie: Path | None, crf: int | None,
-              ecraser: bool, ffmpeg: str = "ffmpeg") -> bool:
-    """Convertit un fichier .mkv en .mp4. Retourne True en cas de succès."""
+def convertir(fichier: Path, dossier_sortie: Path | None,
+              crf: int | str | None, ecraser: bool,
+              ffmpeg: str = "ffmpeg") -> bool:
+    """Convertit un fichier .mkv en .mp4 (ou .avi en mode DivX).
+
+    Retourne True en cas de succès."""
     destination_dir = dossier_sortie if dossier_sortie else fichier.parent
     destination_dir.mkdir(parents=True, exist_ok=True)
-    sortie = destination_dir / (fichier.stem + ".mp4")
+    extension = ".avi" if crf == "divx" else ".mp4"
+    sortie = destination_dir / (fichier.stem + extension)
 
     if sortie.exists() and not ecraser:
         print(f"  ↷ Ignoré (existe déjà) : {sortie.name}  (utilisez --overwrite)")
@@ -105,6 +118,9 @@ def main(argv: list[str] | None = None) -> int:
                          help="Force le réencodage vidéo avec cette qualité "
                               "(18 = haute, 23 = moyenne, 28 = basse). "
                               "Par défaut : copie directe sans réencodage.")
+    parseur.add_argument("--divx", action="store_true",
+                         help="Produit un .avi Xvid+MP3 pour les anciens "
+                              "lecteurs DVD (qui ne lisent pas le H.264/265)")
     parseur.add_argument("-r", "--recursive", action="store_true",
                          help="Parcourir les sous-dossiers")
     parseur.add_argument("--overwrite", action="store_true",
@@ -131,8 +147,9 @@ def main(argv: list[str] | None = None) -> int:
         print("Aucun fichier .mkv trouvé.", file=sys.stderr)
         return 1
 
+    qualite = "divx" if args.divx else args.crf
     print(f"{len(fichiers)} fichier(s) à convertir :")
-    succes = sum(convertir(f, args.output, args.crf, args.overwrite, ffmpeg)
+    succes = sum(convertir(f, args.output, qualite, args.overwrite, ffmpeg)
                  for f in fichiers)
     echecs = len(fichiers) - succes
 
