@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Le Bac à Vinyles</title>
+<meta name="description" content="Collection de vinyles : état des disques, estimation de valeur, statistiques.">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1A1C20">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bac à Vinyles">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Karla:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground:#E4E2DA; --surface:#EFEEE9; --surface-2:#DAD8CE;
+    --ink:#1A1C20; --ink-soft:#565961; --ink-faint:#888B92;
+    --rule:#C7C4B9; --rule-soft:#D6D3C8;
+    --accent:#A8342A; --petrol:#2C5763; --brass:#8E6A22;
+    --vinyl:#26282C; --vinyl-2:#3A3D43;
+    --g-rock:#2C5763; --g-metal:#494D56; --g-chanson:#A8342A;
+    --g-pop:#8A3A64; --g-folk:#58692F; --g-noel:#2C6144; --g-bo:#8E6A22;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:#15171B; --surface:#1D2025; --surface-2:#262A31;
+      --ink:#E4E2DA; --ink-soft:#A4A8AF; --ink-faint:#757982;
+      --rule:#2F343B; --rule-soft:#262A31;
+      --accent:#E0685A; --petrol:#6BA5B6; --brass:#D8AE5E;
+      --vinyl:#0D0E11; --vinyl-2:#1F2227;
+      --g-rock:#6BA5B6; --g-metal:#9AA0AB; --g-chanson:#E0685A;
+      --g-pop:#D081AC; --g-folk:#A7BC78; --g-noel:#6FB894; --g-bo:#D8AE5E;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:#15171B; --surface:#1D2025; --surface-2:#262A31;
+    --ink:#E4E2DA; --ink-soft:#A4A8AF; --ink-faint:#757982;
+    --rule:#2F343B; --rule-soft:#262A31;
+    --accent:#E0685A; --petrol:#6BA5B6; --brass:#D8AE5E;
+    --vinyl:#0D0E11; --vinyl-2:#1F2227;
+    --g-rock:#6BA5B6; --g-metal:#9AA0AB; --g-chanson:#E0685A;
+    --g-pop:#D081AC; --g-folk:#A7BC78; --g-noel:#6FB894; --g-bo:#D8AE5E;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: 'Karla', ui-sans-serif, system-ui, sans-serif;
+    font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased;
+  }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+  .wrap {
+    max-width: 1180px; margin: 0 auto; padding-inline: 20px;
+    padding-block: max(28px, env(safe-area-inset-top)) 72px;
+  }
+  h1, h2, h3 { font-family: 'Oswald', 'Karla', sans-serif; font-weight: 600; text-wrap: balance; margin: 0; }
+  .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+  .masthead { border-bottom: 3px solid var(--ink); padding-bottom: 18px; }
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 10px;
+  }
+  h1 { font-size: clamp(36px, 8vw, 68px); line-height: .95; text-transform: uppercase; font-weight: 700; }
+  .sub { color: var(--ink-soft); margin: 10px 0 0; max-width: 62ch; }
+
+  .figures { display: flex; flex-wrap: wrap; border-bottom: 1px solid var(--rule); margin-bottom: 20px; }
+  .fig { flex: 1 1 140px; padding: 16px 18px 16px 0; border-right: 1px solid var(--rule-soft); }
+  .fig:last-child { border-right: 0; }
+  .fig b {
+    display: block; font-family: 'Oswald', sans-serif; font-weight: 600;
+    font-size: 27px; line-height: 1.1; font-variant-numeric: tabular-nums;
+  }
+  .fig span {
+    display: block; font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ink-faint); margin-top: 6px; font-family: 'IBM Plex Mono', monospace;
+  }
+  .fig.total b { color: var(--brass); }
+
+  .bandeau {
+    background: var(--surface); border: 1px solid var(--rule); border-left: 5px solid var(--petrol);
+    padding: 16px 18px; margin-bottom: 18px; display: flex; flex-wrap: wrap;
+    gap: 14px; align-items: center;
+  }
+  .bandeau p { margin: 0; flex: 1 1 260px; font-size: 14px; color: var(--ink-soft); }
+  .bandeau strong { color: var(--ink); }
+
+  .turntable {
+    background: var(--surface); border: 1px solid var(--rule); border-left: 5px solid var(--accent);
+    padding: 20px 22px; display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-bottom: 14px;
+  }
+  .turntable-text { flex: 1 1 260px; min-width: 0; }
+  .turntable h2 { font-size: 19px; text-transform: uppercase; letter-spacing: .04em; }
+  #pick { margin-top: 6px; font-size: 16px; min-height: 1.6em; overflow-wrap: anywhere; }
+  #pick em { font-style: normal; color: var(--ink-faint); }
+  #pick .pa { font-family: 'Oswald', sans-serif; font-weight: 600; text-transform: uppercase; }
+  #pick .pt { font-style: italic; }
+
+  button, .bouton {
+    font-family: 'Oswald', sans-serif; font-weight: 500; text-transform: uppercase;
+    letter-spacing: .08em; font-size: 13px; background: var(--ink); color: var(--ground);
+    border: 1px solid var(--ink); border-radius: 0; padding: 11px 20px; cursor: pointer;
+    transition: background .15s, color .15s; text-decoration: none; display: inline-block;
+  }
+  button:hover, .bouton:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.ghost { background: transparent; color: var(--ink-soft); border-color: var(--rule); }
+  button.ghost:hover { color: var(--accent); border-color: var(--accent); background: transparent; }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .savebar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--ink-faint); margin-bottom: 24px;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--g-noel); flex: none; }
+  .dot.off { background: var(--accent); }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 14px; }
+  input[type="search"], select {
+    font-family: 'Karla', sans-serif; font-size: 14px; background: var(--surface);
+    color: var(--ink); border: 1px solid var(--rule); border-radius: 0; padding: 10px 12px;
+  }
+  input[type="search"] { flex: 1 1 240px; min-width: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 8px; }
+  .chip {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .06em;
+    text-transform: uppercase; background: transparent; color: var(--ink-soft);
+    border: 1px solid var(--rule); padding: 5px 11px; cursor: pointer; transition: all .14s;
+  }
+  .chip:hover { border-color: var(--ink-soft); color: var(--ink); background: transparent; }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+  .count {
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--ink-faint);
+    margin: 16px 0 14px; border-top: 1px solid var(--rule-soft); padding-top: 12px;
+  }
+
+  .crate { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); list-style: none; padding: 0; margin: 0; }
+  .rec {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-left: 4px solid var(--gc, var(--ink-faint));
+    padding: 14px 15px; display: grid; grid-template-columns: 78px 1fr; gap: 14px;
+  }
+  .disc {
+    width: 78px; height: 78px; border-radius: 50%; align-self: start;
+    background: radial-gradient(circle at 50% 50%,
+      var(--gc) 0 30%, var(--vinyl) 30.5% 33%, var(--vinyl-2) 33% 34%,
+      var(--vinyl) 34% 44%, var(--vinyl-2) 44% 45%, var(--vinyl) 45% 56%,
+      var(--vinyl-2) 56% 57%, var(--vinyl) 57% 100%);
+    display: grid; place-items: center; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,.22);
+  }
+  .disc::after { content:''; width:7px; height:7px; border-radius:50%; background: var(--surface); position:absolute; }
+  .disc span {
+    font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #fff; position: absolute;
+    top: 12px; letter-spacing: .04em; text-shadow: 0 1px 2px rgba(0,0,0,.45); font-variant-numeric: tabular-nums;
+  }
+  .rec-body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .rec-cat {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ink-faint);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .rec-artist {
+    font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 15.5px; line-height: 1.15;
+    text-transform: uppercase; margin-top: 3px; overflow-wrap: anywhere;
+  }
+  .rec-title { font-size: 14px; font-style: italic; overflow-wrap: anywhere; }
+  .rec-label { font-size: 12.5px; color: var(--ink-soft); overflow-wrap: anywhere; }
+  .rec-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+  .tag {
+    font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; letter-spacing: .06em;
+    text-transform: uppercase; border: 1px solid var(--rule); padding: 2px 6px; color: var(--ink-soft);
+  }
+  .tag-g { color: var(--gc); border-color: var(--gc); }
+  .tag-dup { color: var(--accent); border-color: var(--accent); }
+  .grade { grid-column: 1 / -1; border-top: 1px solid var(--rule-soft); padding-top: 10px; margin-top: 2px; }
+  .grade-row { display: flex; flex-wrap: wrap; gap: 10px; }
+  .gfield { flex: 1 1 140px; display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .gfield label {
+    font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; letter-spacing: .07em;
+    text-transform: uppercase; color: var(--ink-faint); flex: none;
+  }
+  .gfield select { flex: 1; min-width: 0; padding: 5px 6px; font-size: 12.5px; }
+  .grade-foot { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-top: 9px; }
+  .val {
+    font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 500;
+    color: var(--brass); font-variant-numeric: tabular-nums;
+  }
+  .val.raw { color: var(--ink-faint); font-weight: 400; }
+  .rec-link {
+    margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+    letter-spacing: .06em; text-transform: uppercase; color: var(--ink-faint);
+    text-decoration: none; border-bottom: 1px solid var(--rule); padding-bottom: 1px;
+  }
+  .rec-link:hover { color: var(--accent); border-color: var(--accent); }
+  .empty { color: var(--ink-faint); font-style: italic; padding: 30px 0; }
+
+  .section { margin-top: 56px; }
+  .section > h2 {
+    font-size: 13px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink);
+    border-bottom: 2px solid var(--ink); padding-bottom: 8px; margin-bottom: 22px;
+  }
+  .panels { display: grid; gap: 30px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .panel h3 {
+    font-size: 12px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--ink-faint); margin-bottom: 14px; font-weight: 500;
+  }
+  .bars { display: flex; flex-direction: column; gap: 9px; }
+  .bar-row { display: grid; grid-template-columns: 62px 1fr 30px; align-items: center; gap: 10px; }
+  .bar-lab, .bar-val {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11.5px;
+    color: var(--ink-soft); font-variant-numeric: tabular-nums;
+  }
+  .bar-val { text-align: right; }
+  .bar-track { background: var(--surface-2); height: 15px; }
+  .bar-fill { background: var(--petrol); height: 100%; }
+  .tally { list-style: none; padding: 0; margin: 0; }
+  .tally li {
+    display: flex; justify-content: space-between; gap: 12px; padding: 7px 0;
+    border-bottom: 1px solid var(--rule-soft); font-size: 14px;
+  }
+  .tally b {
+    font-family: 'IBM Plex Mono', monospace; font-weight: 500; color: var(--ink-soft);
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .notice {
+    background: var(--surface); border: 1px solid var(--rule); border-left: 4px solid var(--brass);
+    padding: 16px 18px; font-size: 14px; color: var(--ink-soft); margin-bottom: 22px;
+  }
+  .notice strong { color: var(--ink); }
+  .scale { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 4px; }
+  .scale li {
+    display: grid; grid-template-columns: 52px 1fr auto; gap: 10px; font-size: 13px;
+    padding: 5px 0; border-bottom: 1px solid var(--rule-soft); align-items: baseline;
+  }
+  .scale b { font-family: 'IBM Plex Mono', monospace; font-weight: 500; color: var(--ink); font-size: 12px; }
+  .scale span:last-child {
+    font-family: 'IBM Plex Mono', monospace; color: var(--brass);
+    font-variant-numeric: tabular-nums; font-size: 12.5px;
+  }
+  .outils { display: flex; flex-wrap: wrap; gap: 10px; }
+  footer {
+    margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--rule);
+    font-size: 12.5px; color: var(--ink-faint);
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  @media (max-width: 560px) {
+    .fig { flex-basis: 45%; border-right: 0; }
+    .bar-row { grid-template-columns: 56px 1fr 26px; }
+    .rec { grid-template-columns: 62px 1fr; }
+    .disc { width: 62px; height: 62px; }
+    .disc span { display: none; }
+    .gfield { flex-direction: column; align-items: stretch; gap: 3px; }
+    .gfield select { font-size: 16px; min-height: 42px; }
+    input[type="search"], #sort { font-size: 16px; min-height: 42px; }
+    .chip { padding: 8px 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">Collection Discogs &middot; collection personnelle</div>
+    <h1>Le Bac<br>à Vinyles</h1>
+    <p class="sub">Note l’état de chaque disque : l’estimation se recalcule aussitôt, galette par
+      galette et pour l’ensemble du bac. Application installable, utilisable sans connexion.</p>
+  </header>
+
+  <section id="accueilImport" hidden>
+    <div class="notice" style="border-left-color:var(--petrol)">
+      <strong>Première utilisation : importe ta collection.</strong>
+      Cette application est publiée <b>sans aucune donnée personnelle</b> — ta collection
+      ne se trouve nulle part sur internet. Charge le fichier <b>ma-collection.json</b>
+      que Claude t’a envoyé dans la conversation : il sera enregistré sur cet appareil
+      uniquement, et l’application sera prête, y compris hors ligne.
+      <p style="margin:14px 0 0">Tu peux aussi charger un export CSV de Discogs, mais sans
+        les estimations de valeur : elles ne figurent que dans le fichier JSON.</p>
+    </div>
+    <div class="outils">
+      <button id="importBtn" type="button">Choisir le fichier</button>
+      <input type="file" id="importFile" accept="application/json,.json,text/csv,.csv" hidden>
+    </div>
+    <p id="importMsg" class="count" hidden></p>
+  </section>
+
+  <div id="appli" hidden>
+
+  <div class="figures">
+    <div class="fig"><b id="figRefs">—</b><span>références</span></div>
+    <div class="fig"><b id="figDiscs">—</b><span>galettes</span></div>
+    <div class="fig"><b id="figGraded">—</b><span>états notés</span></div>
+    <div class="fig total"><b id="figTotal">—</b><span>estimation totale</span></div>
+  </div>
+
+  <div class="bandeau" id="bandeauInstall" hidden>
+    <p><strong>Installer l’application.</strong> Elle s’ajoutera à ton écran d’accueil et
+      s’ouvrira en plein écran, sans barre d’adresse — et fonctionnera même sans réseau.</p>
+    <button id="installBtn" type="button">Installer</button>
+  </div>
+
+  <section class="turntable">
+    <div class="turntable-text">
+      <h2>Ce soir, j’écoute…</h2>
+      <div id="pick"><em>Pioche dans le bac — les filtres actifs sont respectés.</em></div>
+    </div>
+    <button id="pickBtn" type="button">Tirer un disque</button>
+  </section>
+
+  <div class="savebar">
+    <span class="dot" id="saveDot"></span>
+    <span id="saveMsg">Notations enregistrées sur cet appareil.</span>
+  </div>
+
+  <section>
+    <div class="controls">
+      <input type="search" id="q" placeholder="Chercher un artiste, un titre, un label…" aria-label="Rechercher">
+      <select id="sort" aria-label="Trier">
+        <option value="artist">Trier par artiste</option>
+        <option value="value">Trier par valeur ↓</option>
+        <option value="year">Trier par année ↑</option>
+        <option value="year-desc">Trier par année ↓</option>
+        <option value="ungraded">Restant à noter</option>
+      </select>
+    </div>
+    <div class="chips" id="genreChips" role="group" aria-label="Filtrer par genre"></div>
+    <div class="chips" id="decadeChips" role="group" aria-label="Filtrer par décennie"></div>
+    <p class="count" id="count"></p>
+    <ul class="crate" id="crate"></ul>
+  </section>
+
+  <section class="section">
+    <h2>Sauvegarde de tes notations</h2>
+    <div class="notice">
+      <strong>Tes notations vivent sur cet appareil.</strong> Cette application n’envoie rien sur
+      internet : c’est ce qui lui permet de marcher hors ligne, mais aussi ce qui fait qu’elle ne
+      se synchronise pas toute seule entre le téléphone et l’ordinateur. Pour passer de l’un à
+      l’autre — ou simplement ne rien perdre — sauvegarde le fichier et recharge-le ailleurs.
+    </div>
+    <div class="outils">
+      <button class="ghost" id="sauvBtn" type="button">Sauvegarder mes notations</button>
+      <button class="ghost" id="restBtn" type="button">Restaurer une sauvegarde</button>
+      <button class="ghost" id="csvBtn" type="button">Exporter la collection (CSV)</button>
+      <input type="file" id="restFile" accept="application/json,.json" hidden>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Comment l’estimation est calculée</h2>
+    <div class="notice">
+      <strong>Une fourchette indicative, pas une expertise.</strong> Le point de départ de chaque
+      disque est sa valeur en état <b>Near Mint</b>, d’après ma connaissance générale du marché —
+      sans accès aux ventes en cours. Cette base est pondérée par l’état que tu saisis, selon les
+      coefficients ci-dessous, en comptant le disque pour 75 % et la pochette pour 25 %. Pour des
+      chiffres réels, la valeur estimée de ta collection sur Discogs, calculée sur les ventes
+      effectives, reste la référence.
+      <ul class="scale" id="scale"></ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Le bac en chiffres</h2>
+    <div class="panels">
+      <div class="panel"><h3>Par décennie de pressage</h3><div class="bars" id="decBars"></div></div>
+      <div class="panel"><h3>Les dix plus cotés</h3><ul class="tally" id="topTally"></ul></div>
+      <div class="panel"><h3>Valeur estimée par genre</h3><ul class="tally" id="genreTally"></ul></div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Collection importée depuis un export Discogs. Chaque fiche renvoie à sa page Discogs
+      pour vérifier le pressage exact et la cote réelle. Rien n’est envoyé sur internet :
+      tout reste dans le stockage de cet appareil.</p>
+    <p style="margin-top:8px" id="noteDoublons" hidden></p>
+    <p style="margin-top:8px"><button class="ghost" id="oublierBtn" type="button">Oublier cette collection</button></p>
+  </footer>
+  </div>
+
+</div>
+<script src="app.js"></script>
+</body>
+</html>
