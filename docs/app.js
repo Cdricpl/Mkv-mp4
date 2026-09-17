@@ -15,6 +15,7 @@ const GRADES = {
   'NM': {nom:'NM — Near Mint',       mult:1.00},
   'VG+':{nom:'VG+ — Very Good Plus', mult:0.65},
   'VG': {nom:'VG — Very Good',       mult:0.40},
+  'G+': {nom:'G+ — Good Plus',             mult:0.30},
   'G':  {nom:'G — Good',             mult:0.22},
   'F':  {nom:'F — Fair',             mult:0.10},
   'P':  {nom:'P — Poor',             mult:0.05}
